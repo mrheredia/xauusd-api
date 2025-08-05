@@ -2,12 +2,12 @@
 
 import random
 import os
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request  # <-- The 'request' object was missing
 import requests
 
 app = Flask(__name__)
 
-# This is the Bin ID from JSONBin.io. You will get this from the dashboard.
+# This is the Bin ID from JSONBin.io.
 BIN_ID = "68928921ae596e708fc291cd"
 API_URL = f"https://api.jsonbin.io/v3/b/{BIN_ID}/latest"
 
@@ -20,7 +20,8 @@ HEADERS = {
 # New endpoint to receive the price from your local script
 @app.route('/update_price', methods=['POST'])
 def update_price():
-    data = requests.get_json()
+    # Correctly retrieve the JSON data from the request
+    data = request.get_json()  # <-- This line has been corrected
     if data and "xauusd_price" in data:
         new_price = data["xauusd_price"]
         
