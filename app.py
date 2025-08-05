@@ -5,31 +5,49 @@ import os
 from flask import Flask, jsonify
 import requests
 
-# This is our Flask application instance.
 app = Flask(__name__)
 
-# This is our main API endpoint.
+# This is the Bin ID from JSONBin.io. You will get this from the dashboard.
+BIN_ID = "68928921ae596e708fc291cd"
+API_URL = f"https://api.jsonbin.io/v3/b/{BIN_ID}/latest"
+
+# The header for making requests to JSONBin.io
+HEADERS = {
+    "X-Master-Key": os.environ.get("JSONBIN_API_KEY"),
+    "Content-Type": "application/json"
+}
+
+# New endpoint to receive the price from your local script
+@app.route('/update_price', methods=['POST'])
+def update_price():
+    data = requests.get_json()
+    if data and "xauusd_price" in data:
+        new_price = data["xauusd_price"]
+        
+        # Update the price in your JSONBin.io bin
+        update_response = requests.put(API_URL, json={"xauusd_price": new_price}, headers=HEADERS)
+        update_response.raise_for_status()
+        
+        return jsonify({"message": "Price updated successfully", "new_price": new_price}), 200
+    
+    return jsonify({"error": "Invalid data format"}), 400
+
+# Your main API endpoint to serve the data
 @app.route('/xauusd')
 def get_xauusd_data():
     """
-    Fetches XAUUSD data from a real API, calculates a lot size, TP, and SL
+    Fetches XAUUSD data from your JSONBin.io, calculates a lot size, TP, and SL
     for both BUY and SELL scenarios, and returns the data as a JSON response.
     """
-    # 1. Fetch the live XAUUSD price from the TwelveData API.
-    # We now get the API key from a secure environment variable.
-    twelvedata_api_key = os.environ.get("TWELVEDATA_API_KEY")
-    url = f'https://api.twelvedata.com/quote?symbol=XAU/USD&apikey={twelvedata_api_key}'
-
     try:
-        response = requests.get(url)
+        # Fetch the latest price from your JSONBin.io
+        response = requests.get(API_URL, headers=HEADERS)
         response.raise_for_status()
         data = response.json()
         
-        current_price_str = data.get('close')
+        current_price = data.get("xauusd_price")
         
-        if current_price_str:
-            current_price = float(current_price_str)
-        else:
+        if not current_price:
             current_price = 2000.00
     
     except requests.exceptions.RequestException:
@@ -66,10 +84,8 @@ def get_xauusd_data():
         }
     }
 
-    # 6. Return the dictionary as a JSON response.
     return jsonify(response_data)
 
 if __name__ == '__main__':
-    # When deploying, we want to run the app on a port provided by the host.
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=False, host='0.0.0.0', port=port)
