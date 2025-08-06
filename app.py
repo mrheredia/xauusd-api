@@ -16,8 +16,9 @@ PUT_URL = f"https://api.jsonbin.io/v3/b/{BIN_ID}"
 
 
 # The header for making requests to JSONBin.io
-# No X-Master-Key is needed for a public bin.
+# We are re-adding the X-Master-Key for a stable connection.
 HEADERS = {
+    "X-Master-Key": os.environ.get("JSONBIN_API_KEY"),
     "Content-Type": "application/json"
 }
 
