@@ -3,7 +3,6 @@ import time
 import requests
 
 # This is the public URL of your live Render API.
-# You will get this URL from your Render dashboard after we deploy the new code.
 API_URL = "https://xauusd-api.onrender.com/update_price"
 
 # Connect to the MT5 terminal
@@ -15,20 +14,22 @@ print("Connected to MetaTrader 5 terminal.")
 
 while True:
     try:
-        # Get the latest price for XAUUSD
+        # Get the latest price for XAUUSD.p, using the Bid price which is more reliable.
         point_info = mt5.symbol_info_tick("XAUUSD.p")
-        current_price = point_info.last
+        current_price = point_info.bid  # <-- We now use the 'bid' price
 
-        # Prepare the data to be sent
-        payload = {
-            "xauusd_price": current_price
-        }
+        # Only send the price if it is a valid, non-zero number
+        if current_price > 0:
+            payload = {
+                "xauusd_price": current_price
+            }
+            response = requests.post(API_URL, json=payload)
+            response.raise_for_status()
 
-        # Send the price to your Render API
-        response = requests.post(API_URL, json=payload)
-        response.raise_for_status()
+            print(f"Price updated successfully: {current_price}")
+        else:
+            print(f"Waiting for a valid price from MT5. Current price is {current_price}")
 
-        print(f"Price updated successfully: {current_price}")
 
     except Exception as e:
         print(f"Error: {e}")
