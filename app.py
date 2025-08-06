@@ -3,60 +3,25 @@
 import random
 import os
 from flask import Flask, jsonify, request
-import requests
 
 app = Flask(__name__)
 
-# This is the Bin ID from JSONBin.io.
-BIN_ID = "6892c014f7e7a370d1f4ea33"
-
-# Two different URLs for reading and writing to the bin
-GET_URL = f"https://api.jsonbin.io/v3/b/{BIN_ID}/latest"
-PUT_URL = f"https://api.jsonbin.io/v3/b/{BIN_ID}"
-
-
-# The header for making requests to JSONBin.io
-# We are re-adding the X-Master-Key for a stable connection.
-HEADERS = {
-    "X-Master-Key": os.environ.get("JSONBIN_API_KEY"),
-    "Content-Type": "application/json"
-}
-
-# New endpoint to receive the price from your local script
-@app.route('/update_price', methods=['POST'])
-def update_price():
-    data = request.get_json()
-    if data and "xauusd_price" in data:
-        new_price = data["xauusd_price"]
-        
-        # Update the price in your JSONBin.io bin
-        update_response = requests.put(PUT_URL, json={"xauusd_price": new_price}, headers=HEADERS)
-        update_response.raise_for_status()
-        
-        return jsonify({"message": "Price updated successfully", "new_price": new_price}), 200
-    
-    return jsonify({"error": "Invalid data format"}), 400
-
 # Your main API endpoint to serve the data
+# The API now expects a 'price' parameter in the URL.
 @app.route('/xauusd')
 def get_xauusd_data():
     """
-    Fetches XAUUSD data from your JSONBin.io, calculates a lot size, TP, and SL
+    Accepts a 'price' from the URL, calculates a lot size, TP, and SL
     for both BUY and SELL scenarios, and returns the data as a JSON response.
     """
+    # Get the price from the URL query parameters
     try:
-        # Fetch the latest price using the correct URL for a GET request
-        response = requests.get(GET_URL, headers=HEADERS)
-        response.raise_for_status()
-        data = response.json()
-        
-        current_price = data.get("xauusd_price")
-        
-        if not current_price:
-            current_price = 2000.00
-    
-    except requests.exceptions.RequestException:
-        current_price = 2000.00
+        current_price_str = request.args.get('price')
+        if not current_price_str:
+            return jsonify({"error": "Price parameter is missing"}), 400
+        current_price = float(current_price_str)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid price parameter"}), 400
 
     # 2. Randomize a lot size and a target payout.
     lot_size = round(random.uniform(1.0, 3.0), 2)
