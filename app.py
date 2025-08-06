@@ -16,8 +16,8 @@ PUT_URL = f"https://api.jsonbin.io/v3/b/{BIN_ID}"
 
 
 # The header for making requests to JSONBin.io
+# No X-Master-Key is needed for a public bin.
 HEADERS = {
-    "X-Master-Key": os.environ.get("JSONBIN_API_KEY"),
     "Content-Type": "application/json"
 }
 
@@ -29,7 +29,6 @@ def update_price():
         new_price = data["xauusd_price"]
         
         # Update the price in your JSONBin.io bin
-        # Now using the correct URL for a PUT request
         update_response = requests.put(PUT_URL, json={"xauusd_price": new_price}, headers=HEADERS)
         update_response.raise_for_status()
         
