@@ -2,14 +2,18 @@
 
 import random
 import os
-from flask import Flask, jsonify, request  # <-- The 'request' object was missing
+from flask import Flask, jsonify, request
 import requests
 
 app = Flask(__name__)
 
 # This is the Bin ID from JSONBin.io.
 BIN_ID = "6892b8bff7e7a370d1f4e6f9"
-API_URL = f"https://api.jsonbin.io/v3/b/{BIN_ID}/latest"
+
+# Two different URLs for reading and writing to the bin
+GET_URL = f"https://api.jsonbin.io/v3/b/{BIN_ID}/latest"
+PUT_URL = f"https://api.jsonbin.io/v3/b/{BIN_ID}"
+
 
 # The header for making requests to JSONBin.io
 HEADERS = {
@@ -20,13 +24,13 @@ HEADERS = {
 # New endpoint to receive the price from your local script
 @app.route('/update_price', methods=['POST'])
 def update_price():
-    # Correctly retrieve the JSON data from the request
-    data = request.get_json()  # <-- This line has been corrected
+    data = request.get_json()
     if data and "xauusd_price" in data:
         new_price = data["xauusd_price"]
         
         # Update the price in your JSONBin.io bin
-        update_response = requests.put(API_URL, json={"xauusd_price": new_price}, headers=HEADERS)
+        # Now using the correct URL for a PUT request
+        update_response = requests.put(PUT_URL, json={"xauusd_price": new_price}, headers=HEADERS)
         update_response.raise_for_status()
         
         return jsonify({"message": "Price updated successfully", "new_price": new_price}), 200
@@ -41,8 +45,8 @@ def get_xauusd_data():
     for both BUY and SELL scenarios, and returns the data as a JSON response.
     """
     try:
-        # Fetch the latest price from your JSONBin.io
-        response = requests.get(API_URL, headers=HEADERS)
+        # Fetch the latest price using the correct URL for a GET request
+        response = requests.get(GET_URL, headers=HEADERS)
         response.raise_for_status()
         data = response.json()
         
