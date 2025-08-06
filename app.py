@@ -8,7 +8,7 @@ import requests
 app = Flask(__name__)
 
 # This is the Bin ID from JSONBin.io.
-BIN_ID = "68928921ae596e708fc291cd"
+BIN_ID = "6892b8bff7e7a370d1f4e6f9"
 API_URL = f"https://api.jsonbin.io/v3/b/{BIN_ID}/latest"
 
 # The header for making requests to JSONBin.io
